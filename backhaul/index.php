@@ -1,78 +1,46 @@
 <?php
 header('Content-Type: application/json');
 
-$arrContextOptions = [
-    'ssl' => [
-        'verify_peer' => false,
-        'verify_peer_name' => false,
-    ],
-];
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id = $_POST['id'] ?? 'KOSONGANNUL';
+    $endPoint = $_POST['endPoint'] ?? 'KOSONGAN';
+    $username = $_POST['username'] ?? 'iptInstall1zz';
+    $pass = $_POST['pass'] ?? 'NOC%20TELEGLOBALzzz';
 
-    
-    $id = isset($_POST['id']) ? $_POST['id'] : 'KOSONGANNUL';
-    $endPoint = isset($_POST['endPoint']) ? (strval($_POST['endPoint'])) : 'KOSONGAN';
-    $port = isset($_POST['port']) ? strval($_POST['port']) : 'KOSONGAN';
-    
-    $username = isset($_POST['username']) ? $_POST['username'] : 'iptInstall1zz';
-    $pass = isset($_POST['pass']) ? $_POST['pass'] : 'NOC%20TELEGLOBALzzz';
-    
-    $auth = 'username=$username&password=$pass';
+    $url = "https://$endPoint/api/getsensordetails.json?id=$id&username=$username&password=$pass";
 
-    $link = "202.55.175.235:8443/api/getsensordetails.json?id=$id&username=NOC%20TELEGLOBAL&password=iptInstall";
+    // Inisialisasi cURL
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); // Abaikan validasi SSL
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // Abaikan validasi SSL
 
+    // Ambil respons dari API
+    $response = curl_exec($ch);
 
+    if ($response === false) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        echo json_encode(['error' => "cURL Error: $error"]);
+        exit;
+    }
 
-    $getData = @file_get_contents("https://$endPoint/api/getsensordetails.json?id=$id&username=$username&password=$pass", false, stream_context_create($arrContextOptions));
-    $parsedData = json_decode($getData, true);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-
-    $sensorName = $parsedData['sensordata']['name'];
-    $sensorVal = $parsedData['sensordata']['lastvalue'];
-
-    if (!empty($id) && $sensorName != '' && $sensorVal != '') {
+    // Validasi status HTTP
+    if ($httpCode === 200) {
+        $parsedData = json_decode($response, true);
         $data = [
             'sensordata' => [
-                'name' => $parsedData['sensordata']['name'],
-                'value' => $parsedData['sensordata']['lastvalue'],
+                'name' => $parsedData['sensordata']['name'] ?? 'Unknown',
+                'value' => $parsedData['sensordata']['lastvalue'] ?? 'Unknown',
             ],
         ];
     } else {
-        $data = ['sensordata' => null];
+        $data = ['error' => "HTTP Error: $httpCode"];
     }
 
-    $jsonData = json_encode($data);
-    echo $jsonData;
+    echo json_encode($data);
 }
-
-// // Backhaul IBS / MTD BATAM RUNGKUT
-// $konten3 = @file_get_contents("https://202.55.175.235:8443/api/getsensordetails.json?id=25674&username=NOC%20TELEGLOBAL&password=iptInstall1", false, stream_context_create($arrContextOptions));
-// $data3 = json_decode($konten3, true);
-
-// $konten4 = @file_get_contents("https://202.55.175.235:8443/api/getsensordetails.json?id=25673&username=NOC%20TELEGLOBAL&password=iptInstall1", false, stream_context_create($arrContextOptions));
-// $data4 = json_decode($konten4, true);
-
-// $konten5 = @file_get_contents("https://202.55.175.235:8443/api/getsensordetails.json?id=  &username=NOC%20TELEGLOBAL&password=iptInstall1", false, stream_context_create($arrContextOptions));
-// $data5 = json_decode($konten5, true);
-
-// // Backhaul MTD BINTARO JATINEGARA
-// $konten1 = @file_get_contents("https://202.55.175.235:8443/api/getsensordetails.json?id=24173&username=NOC%20TELEGLOBAL&password=iptInstall1", false, stream_context_create());
-// $data1 = json_decode($konten1, true);
-
-// $konten2 = file_get_contents("https://202.55.175.235:8443/api/getsensordetails.json?id=25032&username=NOC%20TELEGLOBAL&password=iptInstall1", false, stream_context_create($arrContextOptions));
-// $data2 = json_decode($konten2, true);
-
-// // Backhaul Kacific
-// $konten6 = @file_get_contents("https://202.55.175.235:8443/api/getsensordetails.json?id=25669&username=NOC%20TELEGLOBAL&password=iptInstall1", false, stream_context_create($arrContextOptions));
-// $data6 = json_decode($konten6, true);
-
-// $data = [
-//    'sensordata' => [
-//     'ipstar' => ['name' => $parsedData['sensordata']['name'], 'value' => $parsedData['sensordata']['lastvalue']]
-//    //  'paket4' => ['name' => $data4['sensordata']['name'], 'value' => $data4['sensordata']['lastvalue']] ,
-//    //  'paket5' => ['name' => $data5['sensordata']['name'], 'value' => $data5['sensordata']['lastvalue']] ,
-//    ]
-// ];
-
-?>
